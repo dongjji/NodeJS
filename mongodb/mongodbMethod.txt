@@ -1,0 +1,32 @@
+1. mongodb CRUD(IFUD) method
+db.collection.insert({},{})
+db.collection.find({})
+db.collection.updateOne({}, {$set{}})
+  db.colection.updateMany...
+db.collection.deleteOne({})
+  db.collection.deleteMany({}) <= no criteria is delete All data
+
+2. 객체 안의 객체 property에 접근하는 방법
+db.collection.find('상위propertyname: 하위propertyname': 값, ...)
+
+3. advanced find method
+형식: db.collection.find({age : {$gt: 8}})
+$eq = equal
+$gt = greater than
+$gte = greater than and equal
+$in = in an array
+$lt = less than
+$lte = les than and equal
+$ne = not equal
+$nin = not in array
+
+$in method 
+db.collection.find({breed: {$in: ['Mutt', 'Corgi']}})
+breed라는 property에 배열안에 있는 값이 값으로 설정되어 있는 data값들을 불러오는 것
+
+4.  논리연산자 $and $not $nor $or
+example... 여러 메소드간 중첩해서 사용 or 메소드와 lte 메소드를 사용
+db.collection.find({$or: [{'property.peroperty': value}, {anotherProperty: {$lte: value}]})
+
+
+
