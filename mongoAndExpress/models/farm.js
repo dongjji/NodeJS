@@ -17,10 +17,10 @@ const farmSchema = Schema({
   products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
 });
 
-farmSchema.pre("findOneAndDelete", async (data) => {
-  console.log("pre middleware");
-  console.log(data);
-});
+// farmSchema.pre("findOneAndDelete", async (data) => {
+//   console.log("pre middleware");
+//   console.log(data);
+// });
 
 farmSchema.post("findOneAndDelete", async (farm) => {
   if (farm.products.length) {
