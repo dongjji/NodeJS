@@ -1,0 +1,71 @@
+{% comment %} https://docs.mongodb.com/manual/reference/operator/query/ {% endcomment %}
+
+1. READ method
+db.collectionName.method({filter})
+ => db.myCollection.find({age: 32})
+db.collectionName.method({Field: {operator: value}})
+ => db.myCollection.find({age: {$gt: 30}})
+...
+
+2. 앞에서 다루지 않았던 내용.
+db.movies.find({genres: ["Drama"]})  vs  db.movies.find({genres: "Drama"})
+    1번은 정확히 장르가 Drama만 있는 길이 1의 배열인 것만 찾는 것이고
+    2번은 장르 속에 Drama가 있는 것들을 찾는 것.
+
+3. $in , $nin
+    db.movies.find({runtime: {$in: [30, 42]}})
+
+4. $or , $nor , $and
+    db.movies.find({$or : [{"rating.average" : {$lt : 5}}, {genres: "Drama"}]}) : 둘중에 하나라도 맞다면
+    db.movies.find({$nor : [{"rating.average" : {$lt : 5}}, {genres: "Drama"}]}) : 둘중에 하나라도 아니라면
+    db.movies.find({$and : [{"rating.average" : {$lt : 5}}, {genres: "Drama"}]}) : 둘다 맞다면
+        === db.movies.find({"rating.average" : {$gt: 5}, genres: "Drama"})
+
+5. count()
+    db.movies.find({"rating.average": {$lt: 5}}).count()
+    db.movies.count() === db.movies.find().count()
+
+6. $not
+    db.movies.find({runtime: {$not: {$eq: 60}}}) === db.movies.find({runtime: {$ne: 60}})
+
+7. $exist
+    db.movies.find({age: {$exists: false}})
+    db.movies.find({age: {$exists: false, age: $gt: 30}})
+    db.movie.find({"rating.average": {$exists: true, $gt: 4}})
+
+8. $type
+    double, string, object, array, binData, undefined, objectId, bool, date, null, regex, dbPointer, javascript, symbol, ...
+    db.movie.find({genres: {$type: "array"}})
+
+9. $regex
+    db.movies.find({summary: "musical"}) => summary : "musical"
+    db.movies.find({summary: {$regex: "musical"}}) => summary에 "musical"이 포함되어 있으면 true
+
+10. $expr
+    db.movies.find({$expr: {$gt: ["rating.average", "runtime"]}}) rating.average > runtime 인 경우 
+    db.movies.find({$expr: {$gte: ["rating.average", "runtime"]}}) rating.average >= runtime 인 경우 
+    db.movies.find({$expr: {$lt: ["rating.average", "runtime"]}}) rating.average < runtime 인 경우 
+    db.movies.find({$expr: {$lte: ["rating.average", "runtime"]}}) rating.average <= runtime 인 경우 
+
+11 $cond ($if, ...) => { $cond: { if: <boolean-expression>, then: <true-case>, else: <false-case> } }
+    db.movies.find({$expr: {$lt: [{$cond: {if: {$gte: ["rating.average", 6]},
+        then: {$add: ["$rating.average", 50]},
+        else: {$add: ["$rating.average", 60]},
+    }}, "$runtime"]}})
+
+    rating.average += rating.average >= 6 ? 50 : 60
+    rating.average < runtime  인 경우
+
+12. Query Array
+    user collection의 document의 형태가
+    {
+        "_id": ~,
+        "hobbies" : [
+            {
+                title: "Sports"
+            }
+        ]
+    }
+    이러한 형태일 때 hobbies 의 요소들 중  title이 Sports인 것이 있을 경우 뽑아내려면
+    => db.find({"hobbies.title" : "Sports"}) 이런식으로 표현하면 된다.
+
