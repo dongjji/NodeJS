@@ -6,7 +6,7 @@ objectId를 생성시에 보여줌.
 db.colection.insert({}, {}) -> 굳이 사용하지 않는 것 같음 혼동하기 쉬워서
 objectId를 생성시에 보여주지 않음.
 
-mongo import -d cars -c carList --drop --jsonArray...
+mongo import <file.json> -d cars -c carList --drop --jsonArray...
 
 2. _id가 겹치는 오류(index와 duplicate key error가 주어짐)
 > db.persons.insertMany([{_id: "a", name: "A"}, {_id: "b", name: "B"}, {_id: "c", name:" C"}])
@@ -141,4 +141,5 @@ DBCollection.prototype.insertMany@src/mongo/shell/crud_api.js:326:5
 { "_id" : "e", "name" : " E" }
 
 => E가 추가된 것을 볼 수 있음.
-
+※ import
+mongoimport -d, -c, --drop
