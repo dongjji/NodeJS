@@ -3,27 +3,48 @@ const ObjectId = mongodb.ObjectId;
 const getDb = require("../util/database").getDb;
 
 class User {
-  constructor(username, email, id) {
+  constructor(username, email, cart, id) {
     this.username = username;
     this.email = email;
-    this._id = id ? new mongodb.ObjectId(id) : null;
+    this.cart = cart;
+    this._id = id;
   }
 
   save() {
     const db = getDb();
-    if (this._id) {
-      return db
-        .collection("users")
-        .updateOne({ _id: this._id }, { $set: this });
+    return db.collection("users").insertOne(this);
+  }
+
+  addToCart(product) {
+    const db = getDb();
+
+    const cartProductIndex = this.cart.items.findIndex((cp) => {
+      return cp.productId === product._id;
+    });
+
+    const updatedCartItems = [...this.cart.items];
+
+    if (cartProductIndex >= 0) {
+      this.cart.items[cartProductIndex].quantity += 1;
     } else {
-      return db.collection("users").insertOne(this);
+      updatedCartItems.push({
+        productId: new ObjectId(product._id),
+        quantity: 1,
+      });
     }
+    return db
+      .collection("users")
+      .updateOne(
+        { _id: new ObjectId(this._id) },
+        { $set: { cart: updatedCartItems } }
+      );
   }
 
   static findUserById(userId) {
     const db = getDb();
-    db.collections("users")
-      .findOne({ _id: new ObjectId(userId) })
+    return db
+      .collection("users")
+      .find({ _id: new ObjectId(userId) })
       .next()
       .then((user) => {
         return user;
