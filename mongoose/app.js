@@ -2,7 +2,6 @@ require("dotenv").config();
 const path = require("path");
 
 const express = require("express");
-const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 
 const errorController = require("./controllers/error");
@@ -15,8 +14,9 @@ app.set("views", "views");
 
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
+const authRoutes = require("./routes/auth");
 
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use((req, res, next) => {
@@ -30,12 +30,18 @@ app.use((req, res, next) => {
 
 app.use("/admin", adminRoutes);
 app.use(shopRoutes);
+app.use(authRoutes);
 
 app.use(errorController.get404);
 
 mongoose
   .connect(
-    `mongodb+srv://dongjoon:${process.env.mongoConnectPassword}@cluster0.u6gwl.mongodb.net/shop?retryWrites=true&w=majority`
+    `mongodb+srv://dongjoon:${process.env.mongoConnectPassword}@cluster0.u6gwl.mongodb.net/shop?retryWrites=true&w=majority`,
+    {
+      useNewUrlParser: true,
+      useCreateIndex: true,
+      useUnifiedTopology: true,
+    }
   )
   .then((result) => {
     User.findOne().then((user) => {
