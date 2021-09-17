@@ -6,7 +6,7 @@ exports.getLogin = (req, res, next) => {
   res.render("auth/login", {
     path: "/login",
     pageTitle: "Login",
-    isAuthenticated: false,
+    errorMessage: req.flash("error"),
   });
 };
 
@@ -15,22 +15,22 @@ exports.postLogin = async (req, res, next) => {
   const findUser = await User.findOne({ email: email });
   if (!findUser) {
     // TODO: req.flash
+    req.flash("error", "존재하지 않는 아이디입니다.");
     return res.redirect("/login");
   }
   const isValid = await bcrypt.compare(password, findUser.password);
-  console.log(isValid);
-  if (isValid) {
-    req.session.isLoggedIn = true;
-    req.session.user = findUser;
-    return res.redirect("/");
-  } else {
-    res.redirect("/login");
+  if (!isValid) {
+    req.flash("error", "아이디 혹은 비밀번호가 일치하지 않습니다.");
+    return res.redirect("/login");
   }
+  req.session.isLoggedIn = true;
+  req.session.user = findUser;
+  return res.redirect("/");
 };
 
 exports.getLogout = (req, res, next) => {
-  isAuthenticated = false;
-  req.session.destroy(() => res.redirect("/"));
+  req.session.destroy();
+  return res.redirect("/");
 };
 
 exports.getSignup = (req, res, next) => {

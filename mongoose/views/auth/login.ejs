@@ -16,6 +16,10 @@
                 <label for="password">Password</label>
                 <input type="password" name="password" id="password">
             </div>
+            <% if (errorMessage) { %>
+                <p><%= errorMessage %></p>
+            <% } %>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button class="btn" type="submit">Login</button>
         </form>
     </main>
