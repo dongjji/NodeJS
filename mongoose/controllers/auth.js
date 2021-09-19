@@ -1,4 +1,5 @@
 require("dotenv").config();
+const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const sendgridTransport = require("nodemailer-sendgrid-transport");
@@ -64,13 +65,34 @@ exports.postSignup = async (req, res, next) => {
   const hash = await bcrypt.hash(password, 12);
   const newUser = new User({ email, password: hash, cart: { items: [] } });
   await newUser.save();
-  await transporter.sendMail({
+  transporter.sendMail({
     to: email,
-    from: "dongjji-master@naver.com",
+    from: "cdj970723@gmail.com",
     subject: "회원가입 인증 메일",
     html: "<h1>인증되셨습니다</h1>",
   });
+
   req.session.isLoggedIn = true;
   req.session.user = newUser;
-  res.redirect("/");
+  return res.redirect("/");
+};
+
+exports.getReset = (req, res, next) => {
+  let message = req.flash("error");
+  message = message.length ? message[0] : null;
+  res.render("auth/reset", {
+    path: "/reset",
+    pageTitle: "Reset Password",
+    errorMessage: message,
+  });
+};
+
+exports.postReset = (req, res, next) => {
+  crypto.randomBytes(64, (err, buffer) => {
+    if (err) {
+      console.log(err);
+      return res.redirect("/reset");
+    }
+    const token = buffer.toString("hex");
+  });
 };
