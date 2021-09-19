@@ -69,7 +69,11 @@ exports.postSignup = async (req, res, next) => {
     to: email,
     from: "cdj970723@gmail.com",
     subject: "회원가입 인증 메일",
-    html: "<h1>인증되셨습니다</h1>",
+    html: `
+    <div style="text-align: center;">
+      <h1>이메일 인증 키</h1>
+    </div>
+    `,
   });
 
   req.session.isLoggedIn = true;
@@ -88,11 +92,67 @@ exports.getReset = (req, res, next) => {
 };
 
 exports.postReset = (req, res, next) => {
-  crypto.randomBytes(64, (err, buffer) => {
+  crypto.randomBytes(64, async (err, buffer) => {
     if (err) {
       console.log(err);
       return res.redirect("/reset");
     }
     const token = buffer.toString("hex");
+    const findUser = await User.findOne({ email: req.body.email });
+    if (!findUser) {
+      req.flash("error", "존재하지 않는 이메일입니다");
+      return res.redirect("/reset");
+    }
+    findUser.resetToken = token;
+    findUser.resetTokenExpiration = Date.now() + 60 * 60 * 1000; // 1hour
+    await findUser.save();
+    res.redirect("/");
+    transporter.sendMail({
+      to: findUser.email,
+      from: "cdj970723@gmail.com",
+      subject: "비밀번호 초기화 인증 코드",
+      html: `
+      <h1>비밀번호 초기화가 요청되었습니다 </h1>
+      <p><a href="http://localhost:3000/reset/${token}">클릭</a>하여 비밀번호 초기화 하기</p>
+      `,
+    });
   });
+};
+
+exports.getNewPassword = async (req, res, next) => {
+  const token = req.params.token;
+  const findUser = await User.findOne({
+    resetToken: token,
+    resetTokenExpiration: { $gt: Date.now() },
+  });
+  if (!findUser) {
+    req.flash("error", "해당 아이디는 존재하지 않는 아이디입니다.");
+    return res.redirect("/");
+  }
+  let message = req.flash("error");
+  message = message.length ? message[0] : null;
+  res.render("auth/new-password", {
+    path: "/new-password",
+    pageTitle: "New Password",
+    errorMessage: message,
+    userId: findUser._id.toString(),
+    passwordToken: token,
+  });
+};
+
+exports.postNewPassword = async (req, res, next) => {
+  const { password, userId, passwordToken } = req.body;
+  const findUser = await User.findOne({
+    resetToken: passwordToken,
+    resetTokenExpiration: { $gt: Date.now() },
+    _id: userId,
+  });
+  const hash = await bcrypt.hash(password, 12);
+  findUser.password = hash;
+  findUser.resetToken = undefined;
+  findUser.resetTokenExpiration = undefined;
+  await findUser.save();
+  req.session.isLoggedIn = true;
+  req.session.user = findUser;
+  res.redirect("/");
 };
