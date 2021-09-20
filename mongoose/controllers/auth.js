@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const sendgridTransport = require("nodemailer-sendgrid-transport");
+const { validationResult } = require("express-validator");
 
 const User = require("../models/user");
 
@@ -19,6 +20,7 @@ exports.getLogin = (req, res, next) => {
     path: "/login",
     pageTitle: "Login",
     errorMessage: req.flash("error"),
+    previousInput: { email: "" },
   });
 };
 
@@ -28,12 +30,22 @@ exports.postLogin = async (req, res, next) => {
   if (!findUser) {
     // TODO: req.flash
     req.flash("error", "존재하지 않는 아이디입니다.");
-    return res.redirect("/login");
+    return res.render("auth/login", {
+      path: "/login",
+      pageTitle: "Login",
+      errorMessage: req.flash("error"),
+      previousInput: { email: email },
+    });
   }
   const isValid = await bcrypt.compare(password, findUser.password);
   if (!isValid) {
     req.flash("error", "아이디 혹은 비밀번호가 일치하지 않습니다.");
-    return res.redirect("/login");
+    return res.render("auth/login", {
+      path: "/login",
+      pageTitle: "Login",
+      errorMessage: req.flash("error"),
+      previousInput: { email: email },
+    });
   }
   req.session.isLoggedIn = true;
   req.session.user = findUser;
@@ -49,11 +61,22 @@ exports.getSignup = (req, res, next) => {
   res.render("auth/signup", {
     pageTitle: "Sign UP",
     path: "/signup",
+    errorMessage: "",
+    previousInput: { email: "" },
   });
 };
 
 exports.postSignup = async (req, res, next) => {
   const { email, password, confirmPassword } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).render("auth/signup", {
+      pageTitle: "Sign UP",
+      path: "/signup",
+      errorMessage: errors.array().length ? errors.array()[0].msg : "",
+      previousInput: { email: email },
+    });
+  }
   const user = await User.findOne({ email: email });
   if (user) {
     req.flash("error", "이미 존재하는 이메일입니다.");

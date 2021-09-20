@@ -7,10 +7,15 @@
     <%- include('../includes/navigation.ejs') %>
 
     <main>
-        <form class="login-form" action="/signup" method="POST">
+        <form class="login-form" action="/signup" method="POST" novalidate>
             <div class="form-control">
                 <label for="email">E-Mail</label>
+                <!-- <% if (previousInput) { %>
+                <input type="email" name="email" id="email" value="<%=previousInput.email%>">
+                <% } else { %>
                 <input type="email" name="email" id="email">
+                <% } %> -->
+                <input type="email" name="email" id="email" value="<%=previousInput.email%>">
             </div>
             <div class="form-control">
                 <label for="password">Password</label>
@@ -20,6 +25,9 @@
                 <label for="confirmPassword">Confirm Password</label>
                 <input type="password" name="confirmPassword" id="confirmPassword">
             </div>
+            <% if (errorMessage) { %>
+                <p><%= errorMessage %></p>
+            <% } %>
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button class="btn" type="submit">Sign Up</button>
         </form>
