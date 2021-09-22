@@ -4,6 +4,7 @@ const express = require("express");
 
 const adminController = require("../controllers/admin");
 const { isLoggedIn } = require("../util/middleware");
+const { body } = require("express-validator");
 
 const router = express.Router();
 
@@ -14,7 +15,17 @@ router.get("/add-product", isLoggedIn, adminController.getAddProduct);
 router.get("/products", adminController.getProducts);
 
 // /admin/add-product => POST
-router.post("/add-product", isLoggedIn, adminController.postAddProduct);
+router.post(
+  "/add-product",
+  isLoggedIn,
+  [
+    body("title").isString().isLength({ min: 3 }).trim(),
+    body("imageUrl").isURL(),
+    body("price").isFloat(),
+    body("description").isLength({ min: 5, max: 400 }).trim(),
+  ],
+  adminController.postAddProduct
+);
 
 router.get(
   "/edit-product/:productId",
@@ -22,7 +33,17 @@ router.get(
   adminController.getEditProduct
 );
 
-router.post("/edit-product", isLoggedIn, adminController.postEditProduct);
+router.post(
+  "/edit-product",
+  isLoggedIn,
+  [
+    body("title").isString().isLength({ min: 3 }).trim(),
+    body("imageUrl").isURL(),
+    body("price").isFloat(),
+    body("description").isLength({ min: 5, max: 400 }).trim(),
+  ],
+  adminController.postEditProduct
+);
 
 router.post("/delete-product", isLoggedIn, adminController.postDeleteProduct);
 

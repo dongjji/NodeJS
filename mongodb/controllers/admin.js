@@ -1,5 +1,6 @@
 const { ObjectId } = require("bson");
 const Product = require("../models/product");
+const { validationResult } = require("express-validator");
 
 exports.getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
@@ -14,6 +15,21 @@ exports.postAddProduct = async (req, res, next) => {
   const price = req.body.price;
   const description = req.body.description;
   const imageUrl = req.body.imageUrl;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.render("/admin/edit-product", {
+      pageTitle: "Edit Product",
+      path: "/admin/editproduct",
+      editing: editMode,
+      hasError: true,
+      product: {
+        title: title,
+        imageUrl: imageUrl,
+        price: price,
+        description: description,
+      },
+    });
+  }
   const product = new Product(
     title,
     price,
