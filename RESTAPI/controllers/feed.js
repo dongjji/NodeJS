@@ -1,4 +1,6 @@
 const { validationResult } = require("express-validator");
+const fs = require("fs");
+const path = require("path");
 const Post = require("../models/post");
 
 exports.getPosts = async (req, res, next) => {
@@ -13,7 +15,7 @@ exports.getPosts = async (req, res, next) => {
   }
 };
 
-exports.createPosts = async (req, res, next) => {
+exports.createPost = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -25,13 +27,20 @@ exports.createPosts = async (req, res, next) => {
       //   errors: errors.array(),
       // });
     }
+    if (!req.file) {
+      const error = new Error("No image provided");
+      error.statusCode = 422;
+      throw error;
+    }
+    const imageUrl = req.file.path;
     const { title, content } = req.body;
     const post = new Post({
       title,
       content,
-      imageUrl: "images/duck.jpeg",
+      imageUrl,
       creator: { name: "DongDong" },
     });
+    console.log(post);
     await post.save();
     res.status(201).json({
       message: "Post created successfully!",
@@ -53,7 +62,7 @@ exports.createPosts = async (req, res, next) => {
   }
 };
 
-module.exports.getPost = async (req, res, next) => {
+exports.getPost = async (req, res, next) => {
   try {
     const postId = req.params.postId;
     const findPost = await Post.findOne({ id: postId });
@@ -71,7 +80,52 @@ module.exports.getPost = async (req, res, next) => {
   }
 };
 
-module.exports.deletePost = async (req, res, next) => {
-  console.log(req.body);
+const clearImage = (filePath) => {
+  filePath = path.join(__dirname, "../", filePath);
+  fs.unlink(filePath, (err) => console.log(err));
+};
+
+exports.updatePost = async (req, res, next) => {
+  try {
+    const { postId, title, content } = req.body;
+    const imageUrl = req.file ? req.file.path : req.body.image;
+    if (!imageUrl) {
+      const error = new Error("no file pciked.");
+      error.statusCode = 422;
+      throw error;
+    }
+    const findPost = await Post.findOne({ id: postId });
+    if (!findPost) {
+      const error = new Erorr("Could not find post");
+      error.statusCode = 404;
+      throw error;
+    }
+    if (imageUrl !== findPost.imageUrl) {
+      clearImage(findPost.imageUrl);
+    }
+    const updatePost = await Post.findByIdAndUpdate(postId, {
+      $set: {
+        title: title,
+        imageUrl: imageUrl,
+        content: content,
+      },
+    });
+  } catch (e) {
+    if (!e.statusCode) {
+      e.statusCode = 500;
+    }
+    throw e;
+  }
+};
+
+exports.deletePost = async (req, res, next) => {
+  const { postId } = req.body;
+  // const deletePost = await Post.findByIdAndDelete(postId);
+  const deletePost = await Post.findById(postId);
+  if (deletePost) {
+    clearImage(deletePost.imageUrl);
+  }
+  await Post.deleteOne({ id: postId });
+
   res.status(200).json({ message: "Complete" });
 };
