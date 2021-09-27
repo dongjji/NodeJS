@@ -30,6 +30,7 @@ const fileFilter = (req, file, callback) => {
 const bodyParser = require("body-parser");
 
 const feedRoutes = require("./routes/feed");
+const userRoutes = require("./routes/user");
 const mongodbURI = `mongodb+srv://dongjoon:${process.env.mongoConnectPassword}@cluster0.u6gwl.mongodb.net/rest?retryWrites=true&w=majority`;
 
 // app.use(bodyParser.urlencoded({ extended: false }))
@@ -50,13 +51,15 @@ app.use((req, res, next) => {
 });
 
 app.use("/feed", feedRoutes);
+app.use("/auth", userRoutes);
 
 // finally
 app.use((err, req, res, next) => {
   console.log(err);
   const status = err.statusCode || 500;
   const message = err.message;
-  res.status(status).json(message);
+  const data = error.data;
+  res.status(status).json(message, data);
 });
 
 mongoose

@@ -5,8 +5,14 @@ const Post = require("../models/post");
 
 exports.getPosts = async (req, res, next) => {
   try {
-    const posts = await Post.find();
-    res.status(200).json({ message: "success", posts: posts });
+    const currentPage = req.query.page || 1;
+    const perPage = 2;
+    const totalItems = await Post.find().countDocuments();
+
+    const posts = await Post.find()
+      .skip((currentPage - 1) * perPage)
+      .limit(perPage);
+    res.status(200).json({ message: "success", posts, totalItems });
   } catch (e) {
     if (!e.statusCode) {
       e.statusCode = 500;
@@ -95,21 +101,14 @@ exports.updatePost = async (req, res, next) => {
       throw error;
     }
     const findPost = await Post.findOne({ id: postId });
-    if (!findPost) {
-      const error = new Erorr("Could not find post");
-      error.statusCode = 404;
-      throw error;
-    }
+    findPost.title = title;
+    findPost.content = content;
+    findPost.imageUrl = imageUrl;
+    await findPost.save();
+
     if (imageUrl !== findPost.imageUrl) {
       clearImage(findPost.imageUrl);
     }
-    const updatePost = await Post.findByIdAndUpdate(postId, {
-      $set: {
-        title: title,
-        imageUrl: imageUrl,
-        content: content,
-      },
-    });
   } catch (e) {
     if (!e.statusCode) {
       e.statusCode = 500;
