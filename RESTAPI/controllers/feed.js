@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator");
 const fs = require("fs");
 const path = require("path");
 const Post = require("../models/post");
+const User = require("../models/user");
 
 exports.getPosts = async (req, res, next) => {
   try {
@@ -44,21 +45,18 @@ exports.createPost = async (req, res, next) => {
       title,
       content,
       imageUrl,
-      creator: { name: "DongDong" },
+      creator: req.userId,
     });
-    console.log(post);
-    await post.save();
+
+    const newPost = await post.save();
+    const user = await User.findById(req.userId);
+    user.posts.push(post);
+    await user.save();
+
     res.status(201).json({
       message: "Post created successfully!",
-      post: {
-        _id: new Date().toISOString(),
-        title,
-        content,
-        creator: {
-          name: "DongDong",
-        },
-        createdAt: new Date(),
-      },
+      post: newPost,
+      creator: { _id: user._id, name: user.name },
     });
   } catch (e) {
     if (!e.statusCode) {
@@ -71,12 +69,13 @@ exports.createPost = async (req, res, next) => {
 exports.getPost = async (req, res, next) => {
   try {
     const postId = req.params.postId;
-    const findPost = await Post.findOne({ id: postId });
+    const findPost = await Post.findById(postId);
     if (!findPost) {
       const error = new Error("Could not find the post");
       error.statusCode = 404;
       throw error;
     }
+    console.log(findPost);
     res.status(200).json({ message: "found", post: findPost });
   } catch (e) {
     if (!e.statusCode) {
@@ -94,6 +93,7 @@ const clearImage = (filePath) => {
 exports.updatePost = async (req, res, next) => {
   try {
     const { postId, title, content } = req.body;
+
     const imageUrl = req.file ? req.file.path : req.body.image;
     if (!imageUrl) {
       const error = new Error("no file pciked.");
@@ -101,6 +101,11 @@ exports.updatePost = async (req, res, next) => {
       throw error;
     }
     const findPost = await Post.findOne({ id: postId });
+    if (findPost.creator.toString() !== req.userId) {
+      const error = new Error("접근 권한이 없습니다");
+      error.statusCode = 403;
+      throw error;
+    }
     findPost.title = title;
     findPost.content = content;
     findPost.imageUrl = imageUrl;
@@ -118,13 +123,22 @@ exports.updatePost = async (req, res, next) => {
 };
 
 exports.deletePost = async (req, res, next) => {
-  const { postId } = req.body;
+  const { postId } = req.params;
   // const deletePost = await Post.findByIdAndDelete(postId);
   const deletePost = await Post.findById(postId);
+  if (deletePost.creator.toString() !== req.userId) {
+    res.redirect("/");
+    const error = new Error("접근 권한이 없습니다");
+    error.statusCode = 403;
+    throw error;
+  }
   if (deletePost) {
     clearImage(deletePost.imageUrl);
   }
   await Post.deleteOne({ id: postId });
+  const user = await User.findById(req.userId);
+  user.posts.pull(postId);
+  await user.save();
 
   res.status(200).json({ message: "Complete" });
 };

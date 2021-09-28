@@ -50,7 +50,11 @@ class Feed extends Component {
       page--;
       this.setState({ postPage: page });
     }
-    fetch("http://localhost:8080/feed/posts")
+    fetch("http://localhost:8080/feed/posts?page=" + page, {
+      headers: {
+        Authorization: "Bearer " + this.props.token
+      }
+    })
       .then(res => {
         if (res.status !== 200) {
           throw new Error("Failed to fetch posts.");
@@ -62,8 +66,7 @@ class Feed extends Component {
           posts: resData.posts.map(post => {
             return {
               ...post,
-              imagePath:
-                "C/Users/user/Desktop/vscode/node/RESTAPI/" + post.imageUrl
+              imagePath: post.imageUrl
             };
           }),
           totalPosts: resData.totalItems,
@@ -124,13 +127,9 @@ class Feed extends Component {
 
     fetch(url, {
       method: method,
-      // headers: {
-      //   'Content-Type': 'application/json',
-      // },
-      // body: JSON.stringify({
-      //   title: postData.title,
-      //   content: postData.content
-      // })
+      headers: {
+        Authorization: "Bearer " + this.props.token
+      },
       body: formData
     })
       .then(res => {
@@ -140,6 +139,7 @@ class Feed extends Component {
         return res.json();
       })
       .then(resData => {
+        console.log(resData);
         const post = {
           _id: resData.post._id,
           title: resData.post.title,
@@ -183,7 +183,10 @@ class Feed extends Component {
   deletePostHandler = postId => {
     this.setState({ postsLoading: true });
     fetch("http://localhost:8080/feed/post/" + postId, {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        Authorization: "Bearer " + this.props.token
+      }
     })
       .then(res => {
         if (res.status !== 200 && res.status !== 201) {
