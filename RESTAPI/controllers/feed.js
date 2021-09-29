@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const Post = require("../models/post");
 const User = require("../models/user");
+const io = require("../socket");
 
 exports.getPosts = async (req, res, next) => {
   try {
@@ -52,7 +53,10 @@ exports.createPost = async (req, res, next) => {
     const user = await User.findById(req.userId);
     user.posts.push(post);
     await user.save();
-
+    io.getIO().emit("posts", {
+      action: "create",
+      post: { ...post._doc, creator: { _id: req.userId, name: user.name } },
+    });
     res.status(201).json({
       message: "Post created successfully!",
       post: newPost,
@@ -100,8 +104,8 @@ exports.updatePost = async (req, res, next) => {
       error.statusCode = 422;
       throw error;
     }
-    const findPost = await Post.findOne({ id: postId });
-    if (findPost.creator.toString() !== req.userId) {
+    const findPost = await Post.findOne({ id: postId }).populate("creator");
+    if (findPost.creator._id.toString() !== req.userId) {
       const error = new Error("접근 권한이 없습니다");
       error.statusCode = 403;
       throw error;
@@ -109,7 +113,8 @@ exports.updatePost = async (req, res, next) => {
     findPost.title = title;
     findPost.content = content;
     findPost.imageUrl = imageUrl;
-    await findPost.save();
+    const result = await findPost.save();
+    io.getIO().emit("posts", { action: "update", post: result });
 
     if (imageUrl !== findPost.imageUrl) {
       clearImage(findPost.imageUrl);
