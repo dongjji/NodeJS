@@ -104,7 +104,9 @@ exports.updatePost = async (req, res, next) => {
       error.statusCode = 422;
       throw error;
     }
-    const findPost = await Post.findOne({ id: postId }).populate("creator");
+    const findPost = await Post.findOne({ id: postId })
+      .populate("creator")
+      .sort({ createdAt: -1 });
     if (findPost.creator._id.toString() !== req.userId) {
       const error = new Error("접근 권한이 없습니다");
       error.statusCode = 403;
@@ -144,6 +146,7 @@ exports.deletePost = async (req, res, next) => {
   const user = await User.findById(req.userId);
   user.posts.pull(postId);
   await user.save();
+  io.getIO().emit("posts", { action: "delete", post: postId });
 
   res.status(200).json({ message: "Complete" });
 };

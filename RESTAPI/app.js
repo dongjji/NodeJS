@@ -4,6 +4,11 @@ const app = express();
 const path = require("path");
 const mongoose = require("mongoose");
 const { v4: uuidv4 } = require("uuid");
+// const graphqlHttp = require("express-graphql").graphqlHttp;
+const { graphqlHTTP } = require("express-graphql");
+
+const graphqlSchema = require("./graphql/schema");
+const graphqlResolver = require("./graphql/resolvers");
 
 const multer = require("multer");
 const fileStorage = multer.diskStorage({
@@ -52,6 +57,23 @@ app.use((req, res, next) => {
 
 app.use("/feed", feedRoutes);
 app.use("/auth", userRoutes);
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    shcema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true,
+    formatError(err) {
+      if (!err.originalError) {
+        return err;
+      }
+      const data = err.originalError.data;
+      const message = err.message;
+      const code = err.originalError.code || 500;
+      return { message, status: code, data };
+    },
+  })
+);
 
 // finally
 app.use((err, req, res, next) => {
