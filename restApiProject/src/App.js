@@ -21,7 +21,7 @@ class App extends Component {
     token: null,
     userId: null,
     authLoading: false,
-    error: null
+    error: null,
   };
 
   componentDidMount() {
@@ -41,7 +41,7 @@ class App extends Component {
     this.setAutoLogout(remainingMilliseconds);
   }
 
-  mobileNavHandler = isOpen => {
+  mobileNavHandler = (isOpen) => {
     this.setState({ showMobileNav: isOpen, showBackdrop: isOpen });
   };
 
@@ -58,37 +58,57 @@ class App extends Component {
 
   loginHandler = (event, authData) => {
     event.preventDefault();
+    const graphqlQuery = {
+      query: `{
+        login(email: "${authData.email}", password: "${authData.password}") {
+          token
+          userId
+        })
+      }`,
+    };
     this.setState({ authLoading: true });
-    fetch("http://localhost:8080/auth/login", {
+    fetch("http://localhost:8080/graphql", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        email: authData.email,
-        password: authData.password
-      })
+      body: JSON.stringify(
+        graphqlQuery
+        // {
+        //   email: authData.email,
+        //   password: authData.password,
+        // }
+      ),
     })
-      .then(res => {
-        if (res.status === 422) {
-          throw new Error("Validation failed.");
-        }
-        if (res.status !== 200 && res.status !== 201) {
-          console.log("Error!");
-          throw new Error("Could not authenticate you!");
-        }
+      .then((res) => {
+        // if (res.status === 422) {
+        //   throw new Error("Validation failed.");
+        // }
+        // if (res.status !== 200 && res.status !== 201) {
+        //   console.log("Error!");
+        //   throw new Error("Could not authenticate you!");
+        // }
+        // console.log(res);
         return res.json();
       })
-      .then(resData => {
-        console.log(resData);
+      .then((resData) => {
+        if (resData.errors && resData.errors[0].status === 422) {
+          console.log(resData);
+          throw new Error(
+            "Validation failed. Make sure the email address isn't used yet!"
+          );
+        }
+        if (resData.errors) {
+          throw new Error("User login failed!");
+        }
         this.setState({
           isAuth: true,
-          token: resData.token,
+          token: resData.login.data.token,
           authLoading: false,
-          userId: resData.userId
+          userId: resData.login.data.userId,
         });
-        localStorage.setItem("token", resData.token);
-        localStorage.setItem("userId", resData.userId);
+        localStorage.setItem("token", resData.login.data.token);
+        localStorage.setItem("userId", resData.login.data.userId);
         const remainingMilliseconds = 60 * 60 * 1000;
         const expiryDate = new Date(
           new Date().getTime() + remainingMilliseconds
@@ -96,12 +116,12 @@ class App extends Component {
         localStorage.setItem("expiryDate", expiryDate.toISOString());
         this.setAutoLogout(remainingMilliseconds);
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
         this.setState({
           isAuth: false,
           authLoading: false,
-          error: err
+          error: err,
         });
       });
   };
@@ -109,18 +129,36 @@ class App extends Component {
   signupHandler = (event, authData) => {
     event.preventDefault();
     this.setState({ authLoading: true });
+    const graphqlQuery = {
+      query: `{
+        mutation {
+          createUser(
+            userInput: {
+              email: "${authData.signupForm.email.value}",
+              name: "${authData.signupForm.name.value}",
+              password: "${authData.signupForm.password.value}"}) {
+                _id
+                email
+              }
+        }
+      }
+      `,
+    };
     fetch("http://localhost:8080/auth/signup", {
       method: "PUT",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        email: authData.signupForm.email.value,
-        password: authData.signupForm.password.value,
-        name: authData.signupForm.name.value
-      })
+      body: JSON.stringify(
+        // graphqlQuery
+        {
+          email: authData.signupForm.email.value,
+          password: authData.signupForm.password.value,
+          name: authData.signupForm.name.value,
+        }
+      ),
     })
-      .then(res => {
+      .then((res) => {
         if (res.status === 422) {
           throw new Error(
             "Validation failed. Make sure the email address isn't used yet!"
@@ -132,22 +170,30 @@ class App extends Component {
         }
         return res.json();
       })
-      .then(resData => {
+      .then((resData) => {
+        if (resData.errors && resData.errors[0].status === 422) {
+          throw new Error(
+            "Validation failed. Make sure the email address isn't used yet!"
+          );
+        }
+        if (resData.errors) {
+          throw new Error("User creation failed!");
+        }
         console.log(resData);
         this.setState({ isAuth: false, authLoading: false });
         this.props.history.replace("/");
       })
-      .catch(err => {
+      .catch((err) => {
         console.log(err);
         this.setState({
           isAuth: false,
           authLoading: false,
-          error: err
+          error: err,
         });
       });
   };
 
-  setAutoLogout = milliseconds => {
+  setAutoLogout = (milliseconds) => {
     setTimeout(() => {
       this.logoutHandler();
     }, milliseconds);
@@ -163,7 +209,7 @@ class App extends Component {
         <Route
           path="/"
           exact
-          render={props => (
+          render={(props) => (
             <LoginPage
               {...props}
               onLogin={this.loginHandler}
@@ -174,7 +220,7 @@ class App extends Component {
         <Route
           path="/signup"
           exact
-          render={props => (
+          render={(props) => (
             <SignupPage
               {...props}
               onSignup={this.signupHandler}
@@ -191,13 +237,13 @@ class App extends Component {
           <Route
             path="/"
             exact
-            render={props => (
+            render={(props) => (
               <FeedPage userId={this.state.userId} token={this.state.token} />
             )}
           />
           <Route
             path="/:postId"
-            render={props => (
+            render={(props) => (
               <SinglePostPage
                 {...props}
                 userId={this.state.userId}

@@ -9,6 +9,7 @@ const { graphqlHTTP } = require("express-graphql");
 
 const graphqlSchema = require("./graphql/schema");
 const graphqlResolver = require("./graphql/resolvers");
+const auth = require("./middleware/isAuth");
 
 const multer = require("multer");
 const fileStorage = multer.diskStorage({
@@ -52,21 +53,27 @@ app.use((req, res, next) => {
     "GET, POST, PUT, PATCH, DELETE"
   );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
   next();
 });
 
 app.use("/feed", feedRoutes);
 app.use("/auth", userRoutes);
+
+// app.use(auth);
 app.use(
   "/graphql",
   graphqlHTTP({
-    shcema: graphqlSchema,
+    schema: graphqlSchema,
     rootValue: graphqlResolver,
     graphiql: true,
-    formatError(err) {
+    customFormatErrorFn(err) {
       if (!err.originalError) {
         return err;
       }
+      console.log(err);
       const data = err.originalError.data;
       const message = err.message;
       const code = err.originalError.code || 500;
@@ -91,14 +98,14 @@ mongoose
     const server = app.listen(8080, () => {
       console.log("server is listening on 8080");
     });
-    const io = require("socket.io")(server, {
-      cors: {
-        origin: "http://localhost:3000",
-        method: ["GET", "POST"],
-      },
-    });
-    io.on("connection", (socket) => {
-      console.log("Client connected");
-    });
+    // const io = require("socket.io")(server, {
+    //   cors: {
+    //     origin: "http://localhost:3000",
+    //     method: ["GET", "POST"],
+    //   },
+    // });
+    // io.on("connection", (socket) => {
+    //   console.log("Client connected");
+    // });
   })
   .catch((err) => console.log(err));
