@@ -31,7 +31,7 @@ describe("Auth Controller - Login", function () {
     User.findOne.restore();
   });
 
-  it("shoud send a response with a valid user status for existing user", function (done) {
+  it("should send a response with a valid user status for existing user", function (done) {
     mongoose
       .connect(`${process.env.mongodbAddress}`, {
         useNewUrlParser: true,
@@ -47,7 +47,7 @@ describe("Auth Controller - Login", function () {
       // return user.save();
       // })
       .then(() => {
-        const req = { userId: "618bc652eebe7f3ffc6fce93" };
+        const req = { userId: "61910e2a0e15f82408049fdf" };
         const res = {
           statusCode: 500,
           userStatus: null,
@@ -62,10 +62,11 @@ describe("Auth Controller - Login", function () {
         AuthController.getUserStatus(req, res, () => {}).then(() => {
           expect(res.statusCode).to.be.equal(200);
           expect(res.userStatus).to.be.equal("I am new!");
-          // mongoose.disconnect().then(() => {
-          //   done();
-          // })
-          done();
+          User.deleteMany({}).then(() => {
+            return mongoose.disconnect();
+          }).then(() => {
+            done();
+          })
         });
       })
       .catch((err) => console.log(err));
