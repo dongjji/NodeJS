@@ -4,7 +4,6 @@ const fs = require('fs');
 
 const rs = fs.createReadStream('local/big-file', {
     encoding: 'utf-8',
-    highWaterMark: 65536*2*2
 })
 
 let chunkCount = 0;
