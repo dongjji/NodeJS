@@ -1,0 +1,13 @@
+html
+    head
+        <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    body
+        h1.bg-gradient-to-r.bg.from-purple-100.to-gray-200.p-16.text-4xl.font-bold 나의 채팅 서비스
+        div.p-16.space-y-8
+            div.bg-gray-300.p-2 채팅 목록
+            form#chat-form.space-x-4.flex
+                input#chat-message.border.border-gray-200.p-4.rounded.flex-1(placeholder="채팅을 입력해 보세요.")
+                button#send-button.bg-green-500.text-whilte.p-2.rounded 보내기
+
+        script(src="/public/client.js")
+        

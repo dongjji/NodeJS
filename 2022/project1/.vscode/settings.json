@@ -1,0 +1,11 @@
+{
+    "[javascript]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "tailwindCSS.emmetCompletions": true // 퍼그에서 taliwind 사용하려면
+}
