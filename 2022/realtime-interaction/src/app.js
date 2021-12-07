@@ -30,24 +30,25 @@ app.ws.use(
   route.all("/ws", async (ctx) => {
     const db = getDb();
     // ctx.websocket.send("Hello World");
+
+    //previous chat
+    const prevChats = await db
+      .collection("chats")
+      .find({}, { sort: { createdAt: 1 } })
+      .toArray();
+    ctx.websocket.send(
+      JSON.stringify({
+        type: "prevChat",
+        payload: {
+          prevChats,
+        },
+      })
+    );
+
     ctx.websocket.on("message", async (data) => {
       if (typeof data !== "string") {
         return;
       }
-
-      //previous chat
-      const prevChats = await db
-        .collection("chats")
-        .find({}, { sort: { createdAt: 1 } })
-        .toArray();
-      ctx.websocket.send(
-        JSON.stringify({
-          type: "prevChat",
-          payload: {
-            prevChats,
-          },
-        })
-      );
 
       // new chat
       const newChat = JSON.parse(data);
